@@ -131,8 +131,9 @@ end
 
 result = examples.map.with_index{|(input, expect) , i|
   next nil unless testNums.nil? || testNums.include?(i)
-  puts sysmsg("=====  TestCase ##{i} =====")
+  puts sysmsg("=====  TestCase ##{i}  =====")
   print dimmsg(input)
+  puts dimmsg("- - - - - - - - - - - - -")
   if expect.nil?
     runCmd(cmd, input)
     nil
