@@ -20,7 +20,7 @@ if ARGV.empty?
 end
 
 lines = $stdin.readlines
-throw "require stardard input" if lines.empty?
+lines = [""] if lines.empty?
 
 cmd = ARGV[0]
 testNums = ARGV[1]&.split(",")&.map(&:to_i)
