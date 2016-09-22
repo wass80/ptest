@@ -45,14 +45,24 @@ def run(cmd, input)
   pid, stdin, stdout, stderr = Open4::popen4 cmd
   stdin.print input
   stdin.close
+
+  cerr = ""
+  Thread.new do
+    stderr.each_char do |c|
+      cerr << c 
+      print (ngmsg c)
+    end
+  end
+  cout = ""
+  Thread.new do
+    stdout.each_char do |c|
+      cout << c 
+      print c
+    end
+  end
+
   _, status = Process::waitpid2 pid
-  sout = ""
-  serr = ""
-  stdout.each_char{|c| sout += c; print c}
-  errmsgStart
-  stderr.each_char{|c| serr += c; $stderr.print c}
-  errmsgEnd
-  [sout, serr, status]
+  [cout, cerr, status]
 end
 
 def runCmd(cmd, input)
