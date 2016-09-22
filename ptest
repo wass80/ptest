@@ -1,0 +1,126 @@
+#! /usr/bin/env ruby
+
+require "open4"
+require "diffy"
+
+KEYWORDS = %w(
+  input output
+  Input Output
+  Sample Output
+  入 出
+  << >>
+).each_slice(2).to_a
+
+lines = $stdin.readlines
+throw "require stardard input" if lines.empty?
+throw "require command string" if ARGV.nil?
+cmd = ARGV[0]
+testNums = ARGV[1]&.split(",")&.map(&:to_i)
+
+def sysmsg(msg) "\e[1m#{msg}\e[0m" end
+def ngmsg(msg) "\e[91m#{msg}\e[0m" end
+def okmsg(msg) "\e[92m#{msg}\e[0m" end
+def dimmsg(msg) msg.split("\n").map{|m|"\e[2m#{m}\e[0m"}.join("\n")+"\n" end
+def errmsgStart() $stderr.print "\e[93m" end
+def errmsgEnd() $stderr.print "\e[0m" end
+def colordiff(a, b)
+  Diffy::Diff.new(a, b).map{|line|
+    case line
+    when /^\+/ then okmsg(line)
+    when /^-/ then ngmsg(line)
+    else line
+    end
+  }.join("")
+end
+
+def run(cmd, input)
+  pid, stdin, stdout, stderr = Open4::popen4 cmd
+  stdin.print input
+  stdin.close
+  _, status = Process::waitpid2 pid
+  sout = ""
+  serr = ""
+  stdout.each_char{|c| sout += c; print c}
+  errmsgStart
+  stderr.each_char{|c| serr += c; $stderr.print c}
+  errmsgEnd
+  [sout, serr, status]
+end
+
+def runCmd(cmd, input)
+  stdout, stderr, status = run(cmd, input)
+  puts (if status != 0
+      ngmsg "Status: #{status}"
+    elsif !stderr.empty?
+      ngmsg "Stderr"
+    else
+      sysmsg (okmsg "Exited")
+    end)
+end
+
+def runTest(cmd, input, expect)
+  stdout, stderr, status = run(cmd, input)
+
+  result = false
+  puts (if stdout != expect
+      (ngmsg "Failed:\n#{expect}") + "diff:\n" + colordiff(stdout, expect)
+    elsif status != 0
+      ngmsg "Status: #{status}"
+    elsif !stderr.empty?
+      ngmsg "Stderr"
+    else
+      result = true
+      sysmsg(okmsg "Passed")
+    end)
+  result
+end
+
+title = lines[0]
+key = KEYWORDS.find{|k| title.start_with?(k[0])}
+if key.nil?
+  print dimmsg(lines.join(""))
+  runCmd(cmd, lines.join(""))
+  exit
+end
+
+examples = lines.map{|l|l.strip}.
+  chunk{|l|l.start_with?(key[0]) && nil}.
+  map{|sep,ans| sep||ans}.
+  compact.
+  map{|ex|
+    out_title = ex.find_index{|l|l.start_with?(key[1])}
+    if out_title.nil?
+      [ex.join("")]
+    else
+      [ex[0..out_title-1].join("\n").strip+"\n", ex[out_title+1..-1].join("\n").strip+"\n"]
+    end
+  }
+
+if cmd == "-"
+  result = examples.map.with_index{|(input, expect) , i|
+    next nil unless testNums.nil? || testNums.include?(i)
+    puts input
+  }
+  exit
+end
+
+result = examples.map.with_index{|(input, expect) , i|
+  next nil unless testNums.nil? || testNums.include?(i)
+  puts sysmsg("=====  TestCase ##{i} =====")
+  print dimmsg(input)
+  if expect.nil?
+    runCmd(cmd, input)
+    nil
+  else
+    runTest(cmd, input, expect)
+  end
+}
+
+if result[0].nil?
+  puts sysmsg("===== End =====")
+elsif result.all?
+  puts okmsg("===== All #{result.size} Tests Passed! Good Job!")
+else
+  failed = result.map.with_index{|r, i| if !r then i end}.compact
+  puts (ngmsg "===== Failed Tests ") + "(#{result.count{|r|r}}/#{result.size}): #{failed.join(",")}"
+end
