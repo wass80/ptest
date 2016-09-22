@@ -14,7 +14,14 @@ KEYWORDS = %w(
 if ARGV.empty?
   puts """Usage:
   ptest <cmd> [<id_num>,<id_num>,...]
-  ptest ./a.out 1,3
+  ptest ./a.out 1,3 < test_cases
+  ptest tac
+    <<
+    head
+    tail
+    >>
+    tail
+    head
 """
   throw "require argument"
 end
