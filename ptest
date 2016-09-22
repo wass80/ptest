@@ -68,11 +68,11 @@ end
 def runCmd(cmd, input)
   stdout, stderr, status = run(cmd, input)
   puts (if status != 0
-      ngmsg "Status: #{status}"
+      ngmsg "Bad status: #{status}"
     elsif !stderr.empty?
-      ngmsg "Stderr"
+      ngmsg "There are Stderr!"
     else
-      sysmsg (okmsg "Exited")
+      sysmsg (okmsg "Exited.")
     end)
 end
 
@@ -83,12 +83,12 @@ def runTest(cmd, input, expect)
   puts (if stdout != expect
       (ngmsg "Failed:\n#{expect}") + "diff:\n" + colordiff(stdout, expect)
     elsif status != 0
-      ngmsg "Status: #{status}"
+      ngmsg "Bad Status: #{status}"
     elsif !stderr.empty?
-      ngmsg "Stderr"
+      ngmsg "There are Stderr."
     else
       result = true
-      sysmsg(okmsg "Passed")
+      sysmsg(okmsg "Passed.")
     end)
   result
 end
